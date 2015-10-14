@@ -1,0 +1,72 @@
+---
+title: "Human Activity Recognition"
+author: "Sergey Cherkasov"
+date: "14 Oct 2015"
+output: html_document
+---
+
+#Synopsis 
+ 
+Activity trackers make possible to collect a large amount of data about personal activity. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it.
+ 
+In this paper we are going to build a model that can predict the manner in which people did the exercise. We use  dataset, generously provided by Groupware@LES in [Qualitative Activity Recognition of Weight Lifting Exercises](http://groupware.les.inf.puc-rio.br/work.jsf?p1=11201).
+
+#Exploratory analysis 
+
+a 
+
+#Building the model 
+
+a:
+```{r echo=FALSE}
+###a
+```
+
+#Cross validation 
+
+a
+
+```{r echo=FALSE}
+###a
+```
+
+
+#out of sample error 
+
+a
+
+```{r echo=FALSE}
+###a
+```
+
+
+#Conclusion 
+ 
+a
+
+#Appendices
+
+##Appendix 1. .
+```{r echo=FALSE}
+###a
+```
+
+##Appendix 2. .
+``` {r echo=FALSE}
+###a
+```
+
+##Appendix 3. .
+``` {r echo=FALSE}
+### a
+```
+
+##Appendix 4. .
+``` {r echo=FALSE}
+### a
+```
+
+##Appendix 5. .
+``` {r echo=FALSE}
+### a
+```
