@@ -13,10 +13,15 @@ In this paper we are going to build a model that can predict the manner in which
 
 #Exploratory analysis and cleaning data   
 
-Training set can be found [here](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv). It contains `r dim(training)[1]` observations with `r dim(training)[2]` variations each. First seven variations which are **`r names(training)[1:7]`** are descriptive, so we can get rid of them.
+Training set can be found [here](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv).
 
 ```{r echo=TRUE}
 training <- read.csv("pml-training.csv")
+```
+
+It contains `r dim(training)[1]` observations with `r dim(training)[2]` variations each. First seven variations which are **`r names(training)[1:7]`** are descriptive, so we can get rid of them.
+
+```{r echo=TRUE}
 training <- training[-(1:7)]
 ```
 
@@ -67,48 +72,14 @@ fit <- train(classe ~ ., data = trTrain, method="rf", trainControl = ctrl)
 
 Now we can estimate the error of the model, using our reserved data. It is those 10% separated and independent percent of data. Error we evaluate is actually the k-fold validation error due to feature of our algorithm.
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 err <- confusionMatrix(trTest$classe, predict(fit, trTest))
 err
 ```
 
-
-#Out of sample error 
-
-a
-
-```{r echo=FALSE}
-###a
-```
+Out of sample error can be calculating by subtraction the model accuracy out of one. For this model it is **`r round((1 - err$overall[1])*100, digits=2)`%**.
 
 
-#Conclusion 
- 
-a
+#Final classification 
 
-#Appendices
-
-##Appendix 1. .
-```{r echo=FALSE}
-###a
-```
-
-##Appendix 2. .
-``` {r echo=FALSE}
-###a
-```
-
-##Appendix 3. .
-``` {r echo=FALSE}
-### a
-```
-
-##Appendix 4. .
-``` {r echo=FALSE}
-### a
-```
-
-##Appendix 5. .
-``` {r echo=FALSE}
-### a
-```
+Now it is time to use provided test set with 20 obrevations to predict variation "classe". First of all we tidy the provided data same way as we did with training set and then we apply the model to the test set. Those results were 100% accurate at the course project submission. They are not shown to prevent the violation of Honor Code.
