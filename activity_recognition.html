@@ -95,7 +95,7 @@ last&lt;-dim(training)[2]
 training[, -last] &lt;- sapply(training[, -last] , function(x) as.numeric(x))
 
 ##Removing zero covariates
-library(caret, quietly=TRUE)
+library(caret, randomForest, quietly=TRUE)
 nsv &lt;- nearZeroVar(training[,-last],saveMetrics=TRUE)
 training &lt;- training[,!nsv$nzv]
 
@@ -105,52 +105,92 @@ inTrain &lt;- createDataPartition(training$classe, p=0.90, list = FALSE)
 trTrain &lt;- training[inTrain,]
 trTest &lt;- training[-inTrain,]</code></pre>
 </div>
+<div id="principal-components-analysis" class="section level1">
+<h1>Principal Components Analysis</h1>
+<p>Since the data discribe the movements of people’s body parts, some variations can corelate to others. Let us check this assumption.</p>
+<pre class="r"><code>M &lt;- abs(cor(trTrain[,-53]))
+diag(M) &lt;- 0
+corVars &lt;- which(M &gt; 0.9,arr.ind=T)
+dim(corVars)[1]</code></pre>
+<pre><code>## [1] 22</code></pre>
+<p>As we can see there are <strong>22</strong> variations which are corelated to each other very tight. That let us assume that Principal Components Analysis can reduce the number of variation. The main parameter is the “thres”, which is cutoff for the cumulative percent of variance to be retained by PCA. If we took it too small we could loose a lot of variation. If we took it to high we would not gain any advantages in time of calculation the model. The default value is 0.95. Since our computer is not really powerfull we have found that thresh = 0.9 looks like an acceptable compromise.</p>
+<pre class="r"><code>preProc &lt;- preProcess(trTrain[,-53], method=&quot;pca&quot;, thresh= 0.9)
+trPCA &lt;- predict(preProc, trTrain[,-53])
+testPCA &lt;- predict(preProc, trTest[,-53])
+dim(trPCA)[2]</code></pre>
+<pre><code>## [1] 19</code></pre>
+<p>So we have reduced the number of variation from <strong>53</strong> to <strong>19</strong>, thanks to PCA method. Now it is time to build a model.</p>
+</div>
 <div id="building-the-model" class="section level1">
 <h1>Building the model</h1>
 <p>Now we can build the model. We are going to use Random Forest algorithm. It was created by Leo Breiman and Adele Cutler and has many advantages. As it stated <a href="https://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm">here</a> it is unexcelled in accuracy among current algorithms, it gives estimates of what variables are important in the classification. And there is no need for cross-validation or a separate test set to get an unbiased estimate of the test set error. It is estimated internally, during the run. Caret package provides a number of methods to estimate the accuracy of a machines learning algorithm. We are going to use k-folds validation with k=5.</p>
 <pre class="r"><code>ctrl &lt;- trainControl(allowParallel = TRUE, method = &quot;cv&quot;, number = 5)
-fit &lt;- train(classe ~ ., data = trTrain, method=&quot;rf&quot;, trainControl = ctrl)</code></pre>
+new.model&lt;-train(trTrain$classe ~ ., data=trPCA,
+                trainControl = ctrl, method=&quot;rf&quot;)</code></pre>
 <pre><code>## Loading required package: randomForest
 ## randomForest 4.6-12
 ## Type rfNews() to see new features/changes/bug fixes.</code></pre>
+<pre class="r"><code>new.model</code></pre>
+<pre><code>## Random Forest 
+## 
+## 17662 samples
+##    18 predictor
+##     5 classes: 'A', 'B', 'C', 'D', 'E' 
+## 
+## No pre-processing
+## Resampling: Bootstrapped (25 reps) 
+## Summary of sample sizes: 17662, 17662, 17662, 17662, 17662, 17662, ... 
+## Resampling results across tuning parameters:
+## 
+##   mtry  Accuracy   Kappa      Accuracy SD  Kappa SD   
+##    2    0.9696138  0.9615592  0.002704807  0.003417898
+##   10    0.9639947  0.9544568  0.002972707  0.003763653
+##   19    0.9544456  0.9423819  0.004334913  0.005484867
+## 
+## Accuracy was used to select the optimal model using  the largest value.
+## The final value used for the model was mtry = 2.</code></pre>
 </div>
 <div id="cross-validation-and-model-evaluation" class="section level1">
 <h1>Cross validation and model evaluation</h1>
-<p>Now we can estimate the error of the model, using our reserved data. It is those 10% separated and independent percent of data. Error we evaluate is actually the k-fold validation error due to feature of our algorithm.</p>
-<pre class="r"><code>err &lt;- confusionMatrix(trTest$classe, predict(fit, trTest))
+<p>Now we can estimate the error of the model, using our reserved data. It is those 10% independent percent of data which were sepatated at the beginning. Error we evaluate is actually the k-fold validation error due to feature of our algorithm.</p>
+<pre class="r"><code>err &lt;- confusionMatrix(trTest$classe, predict(new.model, testPCA))
 err</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
 ## Prediction   A   B   C   D   E
 ##          A 558   0   0   0   0
-##          B   3 375   1   0   0
-##          C   0   2 339   1   0
-##          D   0   0   5 315   1
-##          E   0   0   0   0 360
+##          B   8 368   2   0   1
+##          C   1   4 330   7   0
+##          D   1   0   8 310   2
+##          E   0   2   0   1 357
 ## 
 ## Overall Statistics
 ##                                           
-##                Accuracy : 0.9934          
-##                  95% CI : (0.9887, 0.9965)
-##     No Information Rate : 0.2862          
+##                Accuracy : 0.9811          
+##                  95% CI : (0.9741, 0.9867)
+##     No Information Rate : 0.2898          
 ##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
 ##                                           
-##                   Kappa : 0.9916          
+##                   Kappa : 0.9761          
 ##  Mcnemar's Test P-Value : NA              
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.9947   0.9947   0.9826   0.9968   0.9972
-## Specificity            1.0000   0.9975   0.9981   0.9964   1.0000
-## Pos Pred Value         1.0000   0.9894   0.9912   0.9813   1.0000
-## Neg Pred Value         0.9979   0.9987   0.9963   0.9994   0.9994
-## Prevalence             0.2862   0.1923   0.1760   0.1612   0.1842
-## Detection Rate         0.2847   0.1913   0.1730   0.1607   0.1837
+## Sensitivity            0.9824   0.9840   0.9706   0.9748   0.9917
+## Specificity            1.0000   0.9931   0.9926   0.9933   0.9981
+## Pos Pred Value         1.0000   0.9710   0.9649   0.9657   0.9917
+## Neg Pred Value         0.9929   0.9962   0.9938   0.9951   0.9981
+## Prevalence             0.2898   0.1908   0.1735   0.1622   0.1837
+## Detection Rate         0.2847   0.1878   0.1684   0.1582   0.1821
 ## Detection Prevalence   0.2847   0.1934   0.1745   0.1638   0.1837
-## Balanced Accuracy      0.9973   0.9961   0.9904   0.9966   0.9986</code></pre>
-<p>Out of sample error can be calculating by subtraction the model accuracy out of one. For this model it is <strong>0.66%</strong>.</p>
+## Balanced Accuracy      0.9912   0.9885   0.9816   0.9841   0.9949</code></pre>
+<p>Out of sample error can be calculating by subtraction the model accuracy out of one.</p>
+<pre class="r"><code>1 - err$overall[1]</code></pre>
+<pre><code>##   Accuracy 
+## 0.01887755</code></pre>
+<p>For this model it is <strong>1.89%</strong>.</p>
 </div>
 <div id="final-classification" class="section level1">
 <h1>Final classification</h1>
